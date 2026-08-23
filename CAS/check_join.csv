@@ -1,0 +1,20 @@
+dwh_wirkstoff,ingredient_item_text_x,ask,cas_code,cas_display,action_import
+4-Hydroxybutansäure,1,7410,591-81-1,4-Hydroxybutansäure,check_join
+Benzylpenicillin-Benzathin,1,4371,1538-09-6,Benzylpenicillin-Benzathin,check_join
+"C1-Esterase-Inhibitor, human",1,33715,80295-38-1,"C1-Inhibitor, aus Plasma gewonnen",check_join
+Calcium-Ion,1,1308,14127-61-8,Calcium-Ion,check_join
+Calcium-Ion,1,1308,14127-61-8,Calcium-Ion,check_join
+Calcium-Ion,1,1308,14127-61-8,Calcium-Ion,check_join
+Calcium-Ion,1,1308,14127-61-8,Calcium-Ion,check_join
+Chinolin-8-ol sulfat-1-Wasser,1,43564,207386-91-2,Chinolin-8-ol-hemisulfat-Hemihydrat,check_join
+Citrat-Trianion,2,18014,126-44-3,Citrat,check_join
+Clobetasol 17-propionat,1,11901,25122-46-7,Clobetasolpropionat (Ph.Eur.),check_join
+Dexamethason 21-dihydrogenphosphat,1,10694,312-93-6,Dexamethason-21-dihydrogenphosphat,check_join
+Fluorescein-Natrium,2,2064,518-47-8,Fluorescein-Natrium (Ph.Eur.),check_join
+Flupredniden 21-acetat,2,3666,1255-35-2,Flupredniden-21-acetat,check_join
+Fluticason 17-propionat,1;2,23857,80474-14-2,Fluticasonpropionat (Ph.Eur.),check_join
+Kalium-Ion,1,1305,24203-36-9,Kalium-Ion,check_join
+Magnesium-Ion,1;2,1309,22537-22-0,Magnesium-Ion,check_join
+Polymyxin-B-sulfat,1;3,1725,1405-20-5,Polymyxin-B-sulfat,check_join
+Prednisolon 21-hydrogensuccinat,1,2775,2920-86-7,Prednisolon-21-hydrogensuccinat,check_join
+Tiotropium-Kation,1,36753,186691-13-4,Tiotropium,check_join
