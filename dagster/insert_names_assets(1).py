@@ -52,8 +52,13 @@ insert_name = f"""
         source,
         datensatz_geaendert
     )
-    VALUES (
+    SELECT
         %s, %s, %s, %s, %s, %s, now()
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM {mapping_table_names}
+        WHERE ask_nummer = %s
+          AND name_normalized = %s
     )
 """
 
@@ -144,6 +149,8 @@ def medication_ingredient_name_addition(context: AssetExecutionContext) -> None:
                         False,
                         4,
                         cas_name_source,
+                        ask,
+                        name_normalized,
                     )
                 )
 
