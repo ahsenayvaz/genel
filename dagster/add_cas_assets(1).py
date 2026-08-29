@@ -67,6 +67,26 @@ update_substance = f"""
             WHERE ask_nummer = %s
         """
 
+insert_name = f"""
+    INSERT INTO {mapping_table_names} (
+        ask_nummer,
+        name,
+        name_normalized,
+        is_display,
+        priority,
+        source,
+        datensatz_geaendert
+    )
+    SELECT
+        %s, %s, %s, %s, %s, %s, now()
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM {mapping_table_names}
+        WHERE ask_nummer = %s
+          AND name_normalized = %s
+    )
+"""
+
 # ----------------------------------------------------------------------------------------------------------------------
 # 🚀 DAGSTER ASSET -----------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -126,8 +146,12 @@ def medication_ingredient_cas_code_addition(context: AssetExecutionContext) -> N
             for row in reader:
 
                 action_import = (
-                        row.get("action_import") or ""
-                )
+                    row.get("action_import") or ""
+                ).strip()
+
+                action_import_2 = (
+                    row.get("action_import_2") or ""
+                ).strip()
 
                 ask = int(row["found_ask"])
 
@@ -136,6 +160,7 @@ def medication_ingredient_cas_code_addition(context: AssetExecutionContext) -> N
                 cas_display =row.get("cas_display") or None
                 cas_source = row.get("cas_source") or None
                 ocas_source = row.get("ocas_source") or None
+                dwh_wirkstoff = (row.get("dwh_wirkstoff") or "").strip() or None
 
                 # ------------------------------------------------------
                 # Vorhandenen Datensatz laden
@@ -274,6 +299,39 @@ def medication_ingredient_cas_code_addition(context: AssetExecutionContext) -> N
                             ask,
                         )
                     )
+                # ==============================================================
+                # Zusätzlichen Namen hinzufügen
+                # ==============================================================
+
+                if action_import_2 == "add_cas_name":
+
+                    if not dwh_wirkstoff:
+                        context.log.warning(
+                            f"ASK {ask}: action_import_2 is add_cas_name, "
+                            f"but dwh_wirkstoff is empty. Skipping."
+                        )
+                    else:
+                        name_normalized = normalize_name(dwh_wirkstoff)
+                        cas_name_source = "DWH"
+
+                        cursor.execute(
+                            insert_name,
+                            (
+                                ask,
+                                dwh_wirkstoff,
+                                name_normalized,
+                                False,
+                                4,
+                                cas_name_source,
+                                ask,
+                                name_normalized,
+                            )
+                        )
+
+                        context.log.info(
+                            f"Added additional name "
+                            f"'{dwh_wirkstoff}' for ASK {ask}."
+                        )
 
         # --------------------------------------------------------------------------------------------------------------
 
