@@ -56,14 +56,20 @@ from csv_to_dgh.CAS.cas_utils import (
 # without a found_ask. Real BfArM ASK numbers are always positive, so
 # negative numbers can never collide with them. The next free value is
 # looked up once per run from the current minimum negative ask_nummer
-# already in the table, so repeated runs keep counting down instead of
-# reusing/colliding with previously minted synthetic IDs.
+# already in the table. On reruns, an existing synthetic ASK is reused
+# when the normalized DWH ingredient name is already present in the name table.
 select_min_synthetic_ask = f"""
     SELECT MIN(ask_nummer)
     FROM {mapping_table_substances}
     WHERE ask_nummer < 0
 """
-
+select_existing_synthetic_ask = f"""
+    SELECT ask_nummer
+    FROM {mapping_table_names}
+    WHERE ask_nummer < 0
+      AND name_normalized = %s
+    LIMIT 1
+"""
 insert_substance = f"""
     INSERT INTO {mapping_table_substances} (
         ask_nummer,
@@ -87,9 +93,21 @@ insert_substance = f"""
 
 insert_name = f"""
     INSERT INTO {mapping_table_names} (
-        ask_nummer, name, name_normalized, is_display, priority, source
+        ask_nummer,
+        name,
+        name_normalized,
+        is_display,
+        priority,
+        source
     )
-    VALUES (%s, %s, %s, %s, %s, %s);
+    SELECT
+        %s, %s, %s, %s, %s, %s
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM {mapping_table_names}
+        WHERE ask_nummer = %s
+          AND name_normalized = %s
+    );
 """
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -109,11 +127,11 @@ insert_name = f"""
             f"addressable and its name rows stay reliably joinable via "
             f"ask_nummer - a NULL key would break that link as soon as more "
             f"than one substance lacked an ASK number.\n\n"
-            f"Re-running this asset is safe for substance rows: they are "
-            f"upserted (ON CONFLICT DO UPDATE) by ask_nummer, including "
-            f"synthetic ones, since each is minted once and then stable. "
-            f"Name rows are appended without dedup, consistent with the other "
-            f"name-import assets.\n\n"
+            f"Re-running this asset reuses existing synthetic ASK numbers "
+            f"based on the normalized DWH ingredient name. Substance rows are "
+            f"upserted (ON CONFLICT DO UPDATE) by ask_nummer. Name rows are "
+            f"inserted only when the same ask_nummer and normalized name do not "
+            f"already exist.\n\n"
             f"ATC data from the source CSV (atc_code/atc_display) is not "
             f"persisted - neither target table has columns for it."
     ),
@@ -207,12 +225,23 @@ def medication_ingredient_new_substance_import(context: AssetExecutionContext) -
                 if found_ask:
                     # Reuse an existing (e.g. legacy) ASK number given in the CSV.
                     ask = int(found_ask)
+
                 else:
-                    # No ASK number available at all: mint a new synthetic
-                    # (negative) one so this substance stays individually
-                    # addressable and its names stay joinable.
-                    ask = next_synthetic_ask
-                    next_synthetic_ask -= 1
+                    # Reuse an already existing synthetic ASK on reruns.
+                    dwh_name_normalized = normalize_name(dwh_wirkstoff)
+
+                    cursor.execute(
+                        select_existing_synthetic_ask,
+                        (dwh_name_normalized,)
+                    )
+
+                    existing_row = cursor.fetchone()
+
+                    if existing_row:
+                        ask = existing_row[0]
+                    else:
+                        ask = next_synthetic_ask
+                        next_synthetic_ask -= 1
 
                 # ----------------------------------------------------------
                 # OCAS-Liste aufbauen (aktuell max. ein Wert aus found_ocas)
@@ -256,7 +285,9 @@ def medication_ingredient_new_substance_import(context: AssetExecutionContext) -
                             normalize_name(cas_display),
                             True,
                             1,
-                            cas_source or "DWH",
+                            cas_source or ocas_source or "DWH",
+                            ask,
+                            normalize_name(cas_display),
                         )
                     )
 
@@ -273,6 +304,8 @@ def medication_ingredient_new_substance_import(context: AssetExecutionContext) -
                             False,
                             4,
                             "DWH",
+                            ask,
+                            normalize_name(dwh_wirkstoff),
                         )
                     )
 
