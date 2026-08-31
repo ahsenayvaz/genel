@@ -99,7 +99,7 @@ Clonidin hydrochlorid,1,C02AC01,Clonidin,,,,4866,4205-91-8,Clonidinhydrochlorid,
 Clonidin hydrochlorid,1,N07BB11,Clonidin,,,,4866,4205-91-8,Clonidinhydrochlorid,BEZVO CSV,add_name_mapping,,,,,,,
 Clonidin hydrochlorid,1,S01EA04,Clonidin,,,,4866,4205-91-8,Clonidinhydrochlorid,BEZVO CSV,add_name_mapping,,,,,,,
 Clostridium botulinum (Onabotulinum) Toxin Typ A,1,M03AX21,Botulinumtoxin Typ A,,,,26170,93384-43-1,Botulinum-Toxin Typ A zur Injektion (Ph.Eur.),BEZVO CSV,add_name_mapping,,,,,,,
-Co-trimoxazol,1,J01EE01,Sulfamethoxazol und Trimethoprim,,,,,,,BEZVO CSV,dirty_ingredient_text,Combination name; individual ingredients are Sulfamethoxazol and Trimethoprim.,combination_not_expanded,Sulfamethoxazol; Trimethoprim,1; 2,2895; 2894,723-46-6; 738-70-5,Sulfamethoxazol; Trimethoprim
+Co-trimoxazol,1,J01EE01,Sulfamethoxazol und Trimethoprim,,,,,,,,not_mappable_general_category,Fixed combination of Sulfamethoxazol and Trimethoprim; no single CAS can be assigned to the combined ingredient entry.,,,,,,
 "Codein phosphat-0,5-Wasser",1,R05DA04,Codein,,,,87,41444-62-6,Codeinphosphat-Hemihydrat,BEZVO CSV,add_name_mapping,,,,,,,
 Coffein citrat,1,N06BC01,Coffein,,,,879,69-22-7,Coffein-Citronensäure-Gemisch (1:1),BEZVO CSV,add_name_mapping,,,,,,,
 Colestyramin,1,C10AC01,Colestyramin,,,,4629,11041-12-6,"Colestyramin ((mit Zusatz einer Zahl, die durch 10 geteilt, den ungefähren Prozent-Gehalt an Diethenylbenzol angibt))",BEZVO CSV,add_name_mapping,,,,,,,
