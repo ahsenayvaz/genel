@@ -230,3 +230,4 @@
 "B05AX41","Erythrozyten ohne Pharmazentralnummer","Erythrozyten, UNbestrahlt ITIB","21444","Human-Erythrozyten","BEZVO CSV","add_cas_name","DWH term refers to human erythrocytes; no specific CAS applies."
 "B03AA01|B03AA03","Eisen(II)glycinsulfat|Eisen(II)gluconat","Eisen(II)-Ion","1311","Eisen(Ⅱ)-Ion","BEZVO CSV","add_cas_name",""
 "B03AB05|B03AC01|B03AC02|B03AC07","Eisen(III)hydroxid-Polymaltose-Komplex|Eisen(III)hydroxid-Polymaltose-Komplex|Eisen(III)oxid-Saccharose-Komplex|Eisen(III)natrium-Gluconat-Komplex","Eisen(III)-Ion","1402","Eisen(Ⅲ)-Ion","BEZVO CSV","add_cas_name",""
+"A07DA02","Opium","Opiumtinktur, eingestellt","239","Eingestellte Opiumtinktur","DWH","add_cas_name",""
