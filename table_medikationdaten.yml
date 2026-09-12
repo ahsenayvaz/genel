@@ -1,0 +1,204 @@
+table_configuration:
+
+  medikationdaten:
+    default_import_mode: "full"
+    target_tablename: Medikation
+    create_statement: |
+      CREATE TABLE IF NOT EXISTS Medikation
+      (
+          import_id Int64,
+          medikation_id String,
+          medication_resource_id String,
+          code_text Nullable(String),
+          code_coding_version_atc_bfarm Nullable(String),
+          code_coding_code_atc_bfarm Nullable(String),
+          code_coding_display_atc_bfarm Nullable(String),
+
+          code_coding_code_pzn Nullable(String),
+          code_coding_display_pzn Nullable(String),
+
+          ingredient_item_text_1 Nullable(String),
+          ingredient_item_coding_code_cas_1 Nullable(String),
+          ingredient_item_coding_display_cas_1 Nullable(String),
+          ingredient_item_coding_code_ask_1 Nullable(String),
+          ingredient_strength_numerator_value_1 Nullable(Float64),
+          ingredient_strength_numerator_code_1 Nullable(String),
+          ingredient_strength_numerator_unit_1 Nullable(String),
+          ingredient_strength_denominator_value_1 Nullable(Float64),
+          ingredient_strength_denominator_code_1 Nullable(String),
+          ingredient_strength_denominator_unit_1 Nullable(String),
+          
+          ingredient_item_text_2 Nullable(String),
+          ingredient_item_coding_code_cas_2 Nullable(String),
+          ingredient_item_coding_display_cas_2 Nullable(String),
+          ingredient_item_coding_code_ask_2 Nullable(String),
+          ingredient_strength_numerator_value_2 Nullable(Float64),
+          ingredient_strength_numerator_code_2 Nullable(String),
+          ingredient_strength_numerator_unit_2 Nullable(String),
+          ingredient_strength_denominator_value_2 Nullable(Float64),
+          ingredient_strength_denominator_code_2 Nullable(String),
+          ingredient_strength_denominator_unit_2 Nullable(String),
+          
+          ingredient_item_text_3 Nullable(String),
+          ingredient_item_coding_code_cas_3 Nullable(String),
+          ingredient_item_coding_display_cas_3 Nullable(String),
+          ingredient_item_coding_code_ask_3 Nullable(String),
+          ingredient_strength_numerator_value_3 Nullable(Float64),
+          ingredient_strength_numerator_code_3 Nullable(String),
+          ingredient_strength_numerator_unit_3 Nullable(String),
+          ingredient_strength_denominator_value_3 Nullable(Float64),
+          ingredient_strength_denominator_code_3 Nullable(String),
+          ingredient_strength_denominator_unit_3 Nullable(String),
+          
+          import_date Nullable(DateTime64(6)),
+          last_update Nullable(DateTime64(6))
+      )
+      ENGINE = MergeTree PRIMARY KEY import_id;
+    import_insert_query_columns: |
+      import_id,
+      
+      medikation_id,
+      medication_resource_id,
+      code_text,
+      code_coding_version_atc_bfarm,
+      code_coding_code_atc_bfarm,
+      code_coding_display_atc_bfarm,
+
+      code_coding_code_pzn,
+      code_coding_display_pzn,
+
+      ingredient_item_text_1,
+      ingredient_item_coding_code_cas_1,
+      ingredient_item_coding_display_cas_1,
+      ingredient_item_coding_code_ask_1,
+      ingredient_strength_numerator_value_1,
+      ingredient_strength_numerator_code_1,
+      ingredient_strength_numerator_unit_1,
+      ingredient_strength_denominator_value_1,
+      ingredient_strength_denominator_code_1,
+      ingredient_strength_denominator_unit_1,
+      
+      ingredient_item_text_2,
+      ingredient_item_coding_code_cas_2,
+      ingredient_item_coding_display_cas_2,
+      ingredient_item_coding_code_ask_2,
+      ingredient_strength_numerator_value_2,
+      ingredient_strength_numerator_code_2,
+      ingredient_strength_numerator_unit_2,
+      ingredient_strength_denominator_value_2,
+      ingredient_strength_denominator_code_2,
+      ingredient_strength_denominator_unit_2,
+      
+      ingredient_item_text_3,
+      ingredient_item_coding_code_cas_3,
+      ingredient_item_coding_display_cas_3,
+      ingredient_item_coding_code_ask_3,
+      ingredient_strength_numerator_value_3,
+      ingredient_strength_numerator_code_3,
+      ingredient_strength_numerator_unit_3,
+      ingredient_strength_denominator_value_3,
+      ingredient_strength_denominator_code_3,
+      ingredient_strength_denominator_unit_3,
+      
+      import_date,
+      last_update   
+    import_select_query: |
+      SELECT  DISTINCT ON (m.medikation_id, ma.pzn_code)
+          m.import_id,
+          
+          m.medikation_id as medikation_id,
+          case when m.medikation_id <> '' then CONCAT('medikation-', lower(substring(hex(SHA256(concat(m.medikation_id,'|',COALESCE(ma.pzn_code, '')))), 1, 32))) else '' end as medication_resource_id,
+          bezeichnung,
+          atc_code_version as code_coding_version_atc_bfarm,
+          m.atc_code as code_coding_code_atc_bfarm,
+          atc_mapping.atc_display as code_coding_display_atc_bfarm,
+
+          ma.pzn_code as code_coding_code_pzn,
+          '' as code_coding_display_pzn,
+
+          wirkstoff_1,
+          -- ingredient_name_1.name,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_code_cas_1, substance_name_1.cas_medikation) as ingredient_item_coding_code_cas_1,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_display_cas_1, substance_name_1.cas_display) as ingredient_item_coding_display_cas_1,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_code_ask_1, CASE WHEN substance_name_1.ask_nummer == 0 THEN null ELSE toString(substance_name_1.ask_nummer) END) as ingredient_item_coding_code_ask_1,
+
+          wirkstoffmenge_zaehler_1,
+          -- wirkstoffmenge_zaehler_einheit_1,
+          um_zaehler_1.ucum_unit as wirkstoffmenge_zaehler_einheit_1_ucum_unit,
+          um_zaehler_1.ucum_code as wirkstoffmenge_zaehler_einheit_1_ucum_code,
+          wirkstoffmenge_divisor_1,
+          -- wirkstoffmenge_divisor_einheit_1,
+          um_divisor_1.ucum_unit as wirkstoffmenge_divisor_einheit_1_ucum_unit,
+          um_divisor_1.ucum_code as wirkstoffmenge_divisor_einheit_1_ucum_code,    
+          --
+          
+          wirkstoff_2,
+          -- ingredient_name_2.name,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_code_cas_2, substance_name_2.cas_medikation) as ingredient_item_coding_code_cas_2,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_display_cas_2, substance_name_2.cas_display) as ingredient_item_coding_display_cas_2,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_code_ask_2, CASE WHEN substance_name_2.ask_nummer == 0 THEN null ELSE toString(substance_name_2.ask_nummer) END) as ingredient_item_coding_code_ask_2,
+          wirkstoffmenge_zaehler_2,
+          -- wirkstoffmenge_zaehler_einheit_2,
+          um_zaehler_2.ucum_unit as wirkstoffmenge_zaehler_einheit_2_ucum_unit,
+          um_zaehler_2.ucum_code as wirkstoffmenge_zaehler_einheit_2_ucum_code,
+          wirkstoffmenge_divisor_2,
+          -- wirkstoffmenge_divisor_einheit_2,
+          um_divisor_2.ucum_unit as wirkstoffmenge_divisor_einheit_2_ucum_unit,
+          um_divisor_2.ucum_code as wirkstoffmenge_divisor_einheit_2_ucum_code, 
+          
+          wirkstoff_3,
+          -- ingredient_name_3.name,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_code_cas_3, substance_name_3.cas_medikation) as ingredient_item_coding_code_cas_3,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_display_cas_3, substance_name_3.cas_display) as ingredient_item_coding_display_cas_3,
+          if(notEmpty(ifNull(cas_overwrite.medikation_id, '')), cas_overwrite.ingredient_item_coding_code_ask_3, CASE WHEN substance_name_3.ask_nummer == 0 THEN null ELSE toString(substance_name_3.ask_nummer) END) as ingredient_item_coding_code_ask_3,
+          wirkstoffmenge_zaehler_3,
+          -- wirkstoffmenge_zaehler_einheit_3,
+          um_zaehler_3.ucum_unit as wirkstoffmenge_zaehler_einheit_3_ucum_unit,
+          um_zaehler_3.ucum_code as wirkstoffmenge_zaehler_einheit_3_ucum_code,
+          wirkstoffmenge_divisor_3,
+          -- wirkstoffmenge_divisor_einheit_3,
+          um_divisor_3.ucum_unit as wirkstoffmenge_divisor_einheit_3_ucum_unit,
+          um_divisor_3.ucum_code as wirkstoffmenge_divisor_einheit_3_ucum_code, 
+          
+          m.import_date,
+          m.last_update
+      FROM dgh_central.medikationdaten m
+
+      LEFT JOIN dgh_central.medikationanordnungdaten AS ma 
+        ON m.medikation_id = ma.medikation_id
+
+      LEFT ANY JOIN postgresql_dgh_central.atc_mapping AS atc_mapping
+        ON atc_mapping.atc_code = m.atc_code
+
+      LEFT ANY JOIN postgresql_dgh_central.medikation_cas_overwrite AS cas_overwrite
+        ON cas_overwrite.medikation_id = m.medikation_id
+
+      LEFT ANY JOIN postgresql_dgh_central.medication_cas_names_alpha AS ingredient_name_1
+        ON trim(lower(replaceRegexpAll(ingredient_name_1.name, '[-\s]', ''))) = trim(lower(replaceRegexpAll(m.wirkstoff_1, '[-\s]', '')))
+      LEFT JOIN postgresql_dgh_central.medication_cas_substances_alpha AS substance_name_1
+        ON substance_name_1.ask_nummer = ingredient_name_1.ask_nummer
+        
+      LEFT ANY JOIN postgresql_dgh_central.medication_cas_names_alpha AS ingredient_name_2
+        ON trim(lower(replaceRegexpAll(ingredient_name_2.name, '[-\s]', ''))) = trim(lower(replaceRegexpAll(m.wirkstoff_2, '[-\s]', '')))
+      LEFT JOIN postgresql_dgh_central.medication_cas_substances_alpha AS substance_name_2
+        ON substance_name_2.ask_nummer = ingredient_name_2.ask_nummer
+        
+      LEFT ANY JOIN postgresql_dgh_central.medication_cas_names_alpha AS ingredient_name_3
+        ON trim(lower(replaceRegexpAll(ingredient_name_3.name, '[-\s]', ''))) = trim(lower(replaceRegexpAll(m.wirkstoff_3, '[-\s]', '')))
+      LEFT JOIN postgresql_dgh_central.medication_cas_substances_alpha AS substance_name_3
+        ON substance_name_3.ask_nummer = ingredient_name_3.ask_nummer
+
+      LEFT ANY JOIN postgresql_dgh_central.mapping_ucum_medikation AS um_zaehler_1
+        ON um_zaehler_1.einheit_from_database = m.wirkstoffmenge_zaehler_einheit_1
+      LEFT ANY JOIN postgresql_dgh_central.mapping_ucum_medikation AS um_divisor_1
+        ON um_divisor_1.einheit_from_database = m.wirkstoffmenge_divisor_einheit_1
+        
+      LEFT ANY JOIN postgresql_dgh_central.mapping_ucum_medikation AS um_zaehler_2
+        ON um_zaehler_2.einheit_from_database = m.wirkstoffmenge_zaehler_einheit_2
+      LEFT ANY JOIN postgresql_dgh_central.mapping_ucum_medikation AS um_divisor_2
+        ON um_divisor_2.einheit_from_database = m.wirkstoffmenge_divisor_einheit_2
+        
+      LEFT ANY JOIN postgresql_dgh_central.mapping_ucum_medikation AS um_zaehler_3
+        ON um_zaehler_3.einheit_from_database = m.wirkstoffmenge_zaehler_einheit_3
+      LEFT ANY JOIN postgresql_dgh_central.mapping_ucum_medikation AS um_divisor_3
+        ON um_divisor_3.einheit_from_database = m.wirkstoffmenge_divisor_einheit_3
