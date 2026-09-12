@@ -95,6 +95,7 @@ def medication_ingredient_cas_import_bezvo_csv(context: AssetExecutionContext) -
         id SERIAL PRIMARY KEY,              -- auto-incrementing internal row id
         ask_nummer INTEGER UNIQUE,          -- unique BfArM ASK number identifying the substance
         cas_code TEXT,                      -- primary/main CAS registry number (from the "CAS" column)
+        cas_medikation TEXT,                -- CAS used for medication: cas_code, otherwise ocas_code_primary
         cas_display TEXT,                   -- preferred display name for this substance
         molecular_weight NUMERIC,           -- molecular weight (from the "MOL" column)
 
@@ -106,6 +107,23 @@ def medication_ingredient_cas_import_bezvo_csv(context: AssetExecutionContext) -
 
         datensatz_geaendert TIMESTAMP DEFAULT now()  -- timestamp of last insert/update
     );
+    """
+
+    # Add cas_medikation to an already existing alpha table.
+    add_cas_medikation_column = f"""
+    ALTER TABLE {mapping_table_substances}
+    ADD COLUMN IF NOT EXISTS cas_medikation TEXT;
+    """
+
+    # Fill empty values: use CAS first, otherwise primary OCAS.
+    backfill_cas_medikation = f"""
+    UPDATE {mapping_table_substances}
+    SET cas_medikation = COALESCE(
+        NULLIF(BTRIM(cas_code), ''),
+        NULLIF(BTRIM(ocas_code_primary), '')
+    )
+    WHERE cas_medikation IS NULL
+       OR BTRIM(cas_medikation) = '';
     """
 
     # (2) Name table: One dataset = one name variant, linked to its substance via a foreign key on the ASK number.
@@ -135,12 +153,13 @@ def medication_ingredient_cas_import_bezvo_csv(context: AssetExecutionContext) -
     # with the latest values from this run instead of inserting a duplicate row.
     insert_substances = f"""
     INSERT INTO {mapping_table_substances} (
-        ask_nummer, cas_code, cas_display, molecular_weight,
+        ask_nummer, cas_code, cas_medikation, cas_display, molecular_weight,
         ocas_code_primary, ocas_code_list, cas_code_source, ocas_code_source
     )
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     ON CONFLICT (ask_nummer) DO UPDATE SET
         cas_code = EXCLUDED.cas_code,
+        cas_medikation = EXCLUDED.cas_medikation,
         cas_display = EXCLUDED.cas_display,
         molecular_weight = EXCLUDED.molecular_weight,
         ocas_code_primary = EXCLUDED.ocas_code_primary,
@@ -182,6 +201,8 @@ def medication_ingredient_cas_import_bezvo_csv(context: AssetExecutionContext) -
     try:
         # Make sure both target tables exist before we try to insert anything.
         cursor.execute(create_substances)
+        cursor.execute(add_cas_medikation_column)
+        cursor.execute(backfill_cas_medikation)
         cursor.execute(create_names)
         conn.commit()
 
@@ -206,6 +227,7 @@ def medication_ingredient_cas_import_bezvo_csv(context: AssetExecutionContext) -
                 ocas = split_names(row.get("OCAS"))                 # Alternative CAS, parsed into a list
                 ocas_code_primary = ocas[0] if ocas else None       # First alternative CAS, if any
                 ocas_code_list = "|".join(ocas) if ocas else None   # All alternative CAS, rejoined with "|"
+                cas_medikation = cas if cas else ocas_code_primary
 
                 # --- Names --------------------------------------------------------
                 # Collect every usable name/synonym for this substance from the
@@ -231,6 +253,7 @@ def medication_ingredient_cas_import_bezvo_csv(context: AssetExecutionContext) -
                 substances_rows.append((
                     ask,                          # ask_nummer: primary key
                     cas,                          # cas_code: main CAS
+                    cas_medikation,               # CAS used for medication
                     cas_display,                  # cas_display: preferred display name
                     mol,                          # molecular_weight
                     ocas_code_primary,            # ocas_code_primary: first alternative CAS
